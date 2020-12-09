@@ -7,6 +7,7 @@ import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
+import androidx.room.Update;
 
 @Dao
 public interface DramaBeanDAO {
@@ -22,4 +23,7 @@ public interface DramaBeanDAO {
 
     @Delete
     void delete(DramaBean dramaBean);
+
+    @Query("Update dramas SET collect = :collect WHERE drama_id = :drama_id")
+    void updateCollect(int drama_id, boolean collect);
 }

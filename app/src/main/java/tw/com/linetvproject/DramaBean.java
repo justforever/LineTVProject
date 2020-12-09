@@ -2,6 +2,7 @@ package tw.com.linetvproject;
 
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
@@ -39,6 +40,9 @@ public class DramaBean {
 
     @ColumnInfo(name = "rating")
     private double rating;
+
+    @ColumnInfo(name = "collect")
+    private boolean collect = false;
 
     public int getId() {
         return id;
@@ -94,5 +98,13 @@ public class DramaBean {
 
     public void setRating(double rating) {
         this.rating = rating;
+    }
+
+    public boolean isCollect() {
+        return collect;
+    }
+
+    public void setCollect(boolean collect) {
+        this.collect = collect;
     }
 }

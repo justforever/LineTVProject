@@ -1,23 +1,25 @@
 package tw.com.linetvproject;
 
+import android.content.Intent;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.Menu;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SearchView;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
-import androidx.room.Room;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-
-import android.content.Intent;
-import android.os.Bundle;
-import android.util.Log;
-
-import com.google.gson.Gson;
-
-import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -26,10 +28,15 @@ public class MainActivity extends AppCompatActivity {
     @BindView(R.id.swipeRefresh)
     SwipeRefreshLayout swipeRefreshLayout;
 
+    private SearchView searchView;
+
     private RecyclerView.LayoutManager layoutManager;
     private DramaListAdapter adapter;
 
     private DramaActions dramaActions;
+    private List<DramaBean> allDramaBeans = new ArrayList<>();
+
+    private String keyword = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,21 +49,19 @@ public class MainActivity extends AppCompatActivity {
 
         this.initRecyclerView();
         this.initSwipeRefreshLayout();
+
+        this.loadData();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        this.loadData();
+        keyword = SharedPreferenceUtil.getKeyword(getApplicationContext());
+        filterDramaList();
     }
 
     private void initSwipeRefreshLayout() {
-        this.swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                loadData();
-            }
-        });
+        this.swipeRefreshLayout.setOnRefreshListener(() -> loadData());
     }
 
     private void initRecyclerView() {
@@ -73,22 +78,33 @@ public class MainActivity extends AppCompatActivity {
                 DramaList list = response.body();
                 int size = list.getData().size();
                 for (int i = 0; i < size; i++) {
-                    Log.d("de", list.getData().get(i).getName());
                     dramaActions.insertTask(list.getData().get(i));
                 }
 
+                allDramaBeans = list.getData();
 
-                refreshDramaList(list.getData());
+                filterDramaList();
                 dismissLoading();
-                showDbInfo();
+//                showDbInfo();
             }
 
             @Override
             public void onFailure(Call<DramaList> call, Throwable t) {
-                Log.d("de", "loadData failure, "+t.getMessage());
-                getAllFromDB();
+                Log.d("de", "onFailure, "+t.getMessage());
+                presentNoNetworkAlert();
+//                getAllFromDB();
             }
         });
+    }
+
+    private void presentNoNetworkAlert() {
+        new AlertDialog.Builder(this)
+                .setTitle("Alert")
+                .setMessage("沒有網路連線，暫時使用離線資料。請您使用下拉手勢更新資料")
+                .setPositiveButton("OK", (dialog, which) -> {
+                    getAllFromDB();
+                    dismissLoading();
+                }).show();
     }
 
     private void dismissLoading() {
@@ -101,11 +117,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 Log.d("de", "getAllFromDb in thread");
-                List<DramaBean> listFromDb = dramaActions.getAll();
+                allDramaBeans = dramaActions.getAll();
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        refreshDramaList(listFromDb);
+                        refreshDramaList(allDramaBeans);
                         Log.d("de", "end getAllFromDB");
                     }
                 });
@@ -124,11 +140,27 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("de", "size: "+size);
                 for (int i = 0; i < size; i++) {
                     Log.d("de", ""+listFromDb.get(i).getDrama_id()+", "+listFromDb.get(i).getName());
+                    Log.d("de", "collect: "+listFromDb.get(i).isCollect());
                 }
                 Log.d("de", "-----end showDbInfo-----");
 
             }
         }).start();
+    }
+
+    private void filterDramaList() {
+        List<DramaBean> filterDramaBeans = keyword != null && keyword.length() != 0 ? allDramaBeans.stream().filter((DramaBean dramaBean)
+                -> dramaBean.getName().contains(keyword))
+                .collect(Collectors.toList()) : allDramaBeans;
+
+        if (filterDramaBeans == null) {
+            filterDramaBeans = new ArrayList<>();
+        }
+
+        adapter.setDramaBeanList(filterDramaBeans);
+        adapter.notifyDataSetChanged();
+        if (searchView != null)
+            searchView.clearFocus();
     }
 
     private void refreshDramaList(List<DramaBean> dramaBeanList) {
@@ -140,5 +172,59 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(MainActivity.this, DramaDetailActivity.class);
         intent.putExtra("drama_id", drama_id);
         startActivity(intent);
+    }
+
+    private void updateKeyword() {
+        SharedPreferenceUtil.saveKeyword(getApplicationContext(), keyword);
+    }
+
+    private void setupSearchView() {
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                keyword = query;
+                filterDramaList();
+                updateKeyword();
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                Log.d("de", "current text: "+newText);
+                return false;
+            }
+        });
+
+        searchView.setOnQueryTextFocusChangeListener((v, hasFocus) -> {
+            Log.d("de", "searchView focus change: "+hasFocus);
+        });
+
+        searchView.setOnCloseListener(new SearchView.OnCloseListener() {
+            @Override
+            public boolean onClose() {
+                Log.d("de", "onClose");
+                keyword = "";
+                updateKeyword();
+                filterDramaList();
+                return false;
+            }
+        });
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu, menu);
+        searchView = (SearchView) menu.findItem(R.id.iv_search).getActionView();
+//        menu.findItem(R.id.iv_search).expandActionView();
+        searchView.setQuery(keyword, false);
+        if (keyword != null && keyword.length() != 0) {
+            searchView.setIconified(false);
+        }
+        else {
+            searchView.setIconified(true);
+        }
+        setupSearchView();
+        filterDramaList();
+        return super.onCreateOptionsMenu(menu);
     }
 }

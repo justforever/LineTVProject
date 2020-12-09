@@ -60,4 +60,8 @@ public class DramaActions {
             }
         }.execute();
     }
+
+    public void updateCollect(int drama_id, boolean collect) {
+        dramaDB.dramaBeanDAO().updateCollect(drama_id, collect);
+    }
 }
