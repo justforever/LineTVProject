@@ -44,7 +44,6 @@ public class DramaActions {
 
             @Override
             protected Void doInBackground(Void... voids) {
-                Log.d("de", "insert: "+dramaBean.getName());
                 insert(dramaBean);
                 return null;
             }

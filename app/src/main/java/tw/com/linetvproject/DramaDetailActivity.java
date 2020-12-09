@@ -43,7 +43,6 @@ public class DramaDetailActivity extends AppCompatActivity {
     private void getDramaBeanFromDB() {
         new Thread(() -> {
             dramaBean = DramaActions.getInstance(getApplicationContext()).findById(dramaId);
-            Log.d("de", "getDramaBeanFromDB, "+dramaBean.getName());
             updateDramaDetail();
         }).start();
     }

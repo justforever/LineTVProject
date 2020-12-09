@@ -112,17 +112,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void getAllFromDB() {
-        Log.d("de", "getAllFromDB");
         new Thread(new Runnable() {
             @Override
             public void run() {
-                Log.d("de", "getAllFromDb in thread");
                 allDramaBeans = dramaActions.getAll();
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         refreshDramaList(allDramaBeans);
-                        Log.d("de", "end getAllFromDB");
                     }
                 });
             }
@@ -130,20 +127,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showDbInfo() {
-        Log.d("de", "-----start showDbInfo-----");
         new Thread(new Runnable() {
             @Override
             public void run() {
-                Log.d("de", "in thread");
                 List<DramaBean> listFromDb = dramaActions.getAll();
                 int size = listFromDb.size();
-                Log.d("de", "size: "+size);
                 for (int i = 0; i < size; i++) {
-                    Log.d("de", ""+listFromDb.get(i).getDrama_id()+", "+listFromDb.get(i).getName());
-                    Log.d("de", "collect: "+listFromDb.get(i).isCollect());
                 }
-                Log.d("de", "-----end showDbInfo-----");
-
             }
         }).start();
     }
@@ -190,19 +180,16 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                Log.d("de", "current text: "+newText);
                 return false;
             }
         });
 
         searchView.setOnQueryTextFocusChangeListener((v, hasFocus) -> {
-            Log.d("de", "searchView focus change: "+hasFocus);
         });
 
         searchView.setOnCloseListener(new SearchView.OnCloseListener() {
             @Override
             public boolean onClose() {
-                Log.d("de", "onClose");
                 keyword = "";
                 updateKeyword();
                 filterDramaList();
@@ -215,7 +202,6 @@ public class MainActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu, menu);
         searchView = (SearchView) menu.findItem(R.id.iv_search).getActionView();
-//        menu.findItem(R.id.iv_search).expandActionView();
         searchView.setQuery(keyword, false);
         if (keyword != null && keyword.length() != 0) {
             searchView.setIconified(false);
