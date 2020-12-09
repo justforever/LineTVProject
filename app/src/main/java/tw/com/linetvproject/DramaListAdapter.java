@@ -4,6 +4,8 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -20,10 +22,25 @@ public class DramaListAdapter extends RecyclerView.Adapter<DramaListAdapter.Dram
     private WeakReference<MainActivity> activityWeakReference;
     private WeakReference<Context> contextWeakReference;
     private List<DramaBean> dramaBeanList;
+    // Allows to remember the last item shown on screen
+    private int lastPosition = -1;
+
+    private Animation translateAnim;
+    private Animation alphaAnim;
 
     public DramaListAdapter(Context context, MainActivity activity) {
         this.contextWeakReference = new WeakReference<>(context);
         this.activityWeakReference = new WeakReference<>(activity);
+
+        this.initAnim();
+    }
+
+    private void initAnim() {
+        this.translateAnim = AnimationUtils.loadAnimation(contextWeakReference.get(), android.R.anim.slide_in_left);
+        this.translateAnim.setDuration(500);
+
+        this.alphaAnim = AnimationUtils.loadAnimation(contextWeakReference.get(), android.R.anim.fade_in);
+        this.alphaAnim.setDuration(1000);
     }
 
     public void setDramaBeanList(List<DramaBean> dramaBeanList) {
@@ -47,14 +64,32 @@ public class DramaListAdapter extends RecyclerView.Adapter<DramaListAdapter.Dram
         }
         holder.tvRating.setText(String.valueOf(dramaBean.getRating()));
         holder.tvCreated.setText(DateUtil.convertDateFormat(dramaBean.getCreated_at()));
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (null != activityWeakReference.get()) {
-                    activityWeakReference.get().goDetailActivity(dramaBean.getDrama_id());
-                }
+        holder.itemView.setOnClickListener(v -> {
+            if (null != activityWeakReference.get()) {
+                activityWeakReference.get().goDetailActivity(dramaBean.getDrama_id());
             }
         });
+        setAnimation(holder.itemView, position);
+    }
+
+    private void setAnimation(View viewToAnimate, int position) {
+        if (position > lastPosition) {
+            if (position % 2 == 0) {
+                setTranslateAnimation(viewToAnimate);
+            }
+            else {
+                setAlphaAnimation(viewToAnimate);
+            }
+            lastPosition = position;
+        }
+    }
+
+    private void setTranslateAnimation(View view) {
+        view.startAnimation(this.translateAnim);
+    }
+
+    private void setAlphaAnimation(View view) {
+        view.startAnimation(this.alphaAnim);
     }
 
     @Override
