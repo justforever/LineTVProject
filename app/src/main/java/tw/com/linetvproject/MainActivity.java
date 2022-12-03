@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        //bind references
         ButterKnife.bind(this);
 
         dramaActions = new DramaActions(getApplicationContext());
